@@ -1,0 +1,374 @@
+<!--pages/index/index.wxml — OV Watch 极简白色主题 -->
+<view class="container">
+
+  <!-- ═══════════ 连接仪表板 ═══════════ -->
+  <view class="card hero-card">
+    <view class="hero-top">
+      <view>
+        <view class="hero-title">OV 手表</view>
+        <view class="hero-subtitle">蓝牙控制中心</view>
+      </view>
+      <view class="status-badge {{statusClass}}">{{statusText}}</view>
+    </view>
+
+    <!-- 脉冲环 + 核心 -->
+    <view class="pulse-wrap">
+      <view class="pulse-ring"></view>
+      <view class="pulse-ring pulse-ring-2"></view>
+      <view class="pulse-ring pulse-ring-3"></view>
+      <view class="pulse-core {{connected ? 'connected' : (scanning ? 'scanning' : 'disconnected')}}">
+        <view class="pulse-icon">{{connected ? '⌚' : (scanning ? '📡' : '📶')}}</view>
+        <view class="pulse-label">{{connected ? '设备' : (scanning ? '扫描中' : '待机')}}</view>
+        <view class="pulse-value">{{connected ? '在线' : (scanning ? '搜索中' : '离线')}}</view>
+      </view>
+    </view>
+
+    <!-- 设备信息网格 -->
+    <view class="device-meta-grid" wx:if="{{deviceInfo}}">
+      <view class="meta-item">
+        <text class="meta-label">设备名</text>
+        <text class="meta-value">{{deviceInfo.name || '(无广播名)'}}</text>
+      </view>
+      <view class="meta-item">
+        <text class="meta-label">MAC 地址</text>
+        <text class="meta-value">{{deviceInfo.deviceId}}</text>
+      </view>
+      <view class="meta-item" style="grid-column: span 2;">
+        <text class="meta-label">信号强度</text>
+        <text class="meta-value {{deviceInfo.RSSI >= -65 ? 'rssi-good' : (deviceInfo.RSSI >= -75 ? 'rssi-mid' : 'rssi-weak')}}">{{deviceInfo.RSSI}} dBm</text>
+      </view>
+    </view>
+
+    <view class="divider"></view>
+
+    <!-- 主控制按钮：全宽堆叠 -->
+    <button
+      class="btn-primary btn-tall"
+      loading="{{scanning}}"
+      disabled="{{!connected && !scanning && busy}}"
+      bindtap="onTapScan">
+      {{connected ? '断开并重新扫描' : (scanning ? '停止扫描' : '扫描手表')}}
+    </button>
+
+    <view style="height: 16rpx;"></view>
+
+    <button
+      class="btn-danger btn-tall"
+      disabled="{{!connected || busy}}"
+      bindtap="onTapDisconnect">
+      断开连接
+    </button>
+  </view>
+
+  <!-- ═══════════ 发现的设备列表 ═══════════ -->
+  <view class="card" wx:if="{{scanning || deviceList.length > 0}}">
+    <view class="card-title">
+      <text>设备扫描</text>
+      <view wx:if="{{scanning}}" class="scan-indicator" style="margin-left:auto;">
+        <view class="scan-dot"></view>
+        <text>扫描中…</text>
+      </view>
+      <text wx:else style="margin-left:auto; font-size:22rpx; color:#9ca3af; font-weight:normal;">
+        {{deviceList.length}} 台设备
+      </text>
+    </view>
+
+    <block wx:if="{{deviceList.length === 0}}">
+      <view class="center-text" style="padding: 40rpx 0;">
+        正在搜索 KT6368A 目标设备…
+      </view>
+    </block>
+
+    <block wx:else>
+      <view
+        wx:for="{{deviceList}}"
+        wx:key="deviceId"
+        class="device-item {{item.isLast ? 'device-item-last' : ''}}"
+        bindtap="onTapDevice"
+        data-id="{{item.deviceId}}"
+        data-name="{{item.name}}"
+        data-rssi="{{item.RSSI}}"
+        hover-class="device-item-hover"
+        hover-stay-time="80">
+        <view class="device-icon">⌚</view>
+        <view style="flex:1; min-width:0;">
+          <view style="display:flex; align-items:center; gap:12rpx;">
+            <text class="device-name">{{item.name}}</text>
+            <text wx:if="{{item.isLast}}" class="last-badge">⚡ 上次</text>
+          </view>
+          <view class="device-meta">
+            <text>MAC: {{item.deviceId}}</text>
+          </view>
+        </view>
+        <view class="rssi-box">
+          <text class="rssi-val">{{item.RSSI}} dBm</text>
+          <view class="rssi-bar-wrap">
+            <view class="rssi-bar" style="width: {{100 + item.RSSI}}%"></view>
+          </view>
+        </view>
+      </view>
+    </block>
+
+    <view wx:if="{{!scanning && deviceList.length === 0 && !connected}}"
+      style="margin-top:28rpx;" class="error-text">
+      扫描结束但未发现设备。请确认：手表已上电、距离小于 1 米、其它 BLE 工具已关闭。
+    </view>
+  </view>
+
+  <!-- ═══════════ 控制面板 ═══════════ -->
+  <view class="card">
+    <view class="card-title">
+      <text>控制中心</text>
+    </view>
+
+    <!-- 快速操作 -->
+    <view class="grid-2" style="margin-bottom: 8rpx;">
+      <button class="btn-secondary btn-tall" disabled="{{!connected || busy}}" bindtap="onTapPing">
+        🔗 连通测试
+      </button>
+      <button class="btn-secondary btn-tall" disabled="{{!connected || busy}}" bindtap="onTapVersion">
+        ℹ️ 读取版本
+      </button>
+    </view>
+
+    <view class="row" wx:if="{{version}}">
+      <text class="row-label">固件版本</text>
+      <text class="row-value">{{version}}</text>
+    </view>
+
+    <view class="divider"></view>
+
+    <!-- 刷新全量 -->
+    <button
+      class="btn-primary btn-tall"
+      disabled="{{!connected || busy}}"
+      bindtap="onTapQueryAll"
+      style="margin-bottom: 28rpx;">
+      📡 刷新全量传感器数据
+    </button>
+
+    <!-- 传感器网格 -->
+    <view class="sensor-grid">
+      <view class="sensor-tile">
+        <text class="sensor-icon">📅</text>
+        <view class="sensor-name">日期</view>
+        <view class="sensor-val">{{sensor.date || '—'}}</view>
+      </view>
+      <view class="sensor-tile">
+        <text class="sensor-icon">🕐</text>
+        <view class="sensor-name">时间</view>
+        <view class="sensor-val">{{sensor.time || '—'}}</view>
+      </view>
+      <view class="sensor-tile">
+        <text class="sensor-icon">💧</text>
+        <view class="sensor-name">湿度</view>
+        <view class="sensor-val">{{sensor.humidity || '—'}}</view>
+      </view>
+      <view class="sensor-tile accent-magenta">
+        <text class="sensor-icon">🌡️</text>
+        <view class="sensor-name">温度</view>
+        <view class="sensor-val">{{sensor.temperature || '—'}}</view>
+      </view>
+      <view class="sensor-tile accent-red">
+        <text class="sensor-icon">❤️</text>
+        <view class="sensor-name">心率</view>
+        <view class="sensor-val">{{sensor.heartRate || '—'}}</view>
+      </view>
+      <view class="sensor-tile accent-amber">
+        <text class="sensor-icon">🫁</text>
+        <view class="sensor-name">血氧</view>
+        <view class="sensor-val">{{sensor.spo2 || '—'}}</view>
+      </view>
+      <view class="sensor-tile accent-green">
+        <text class="sensor-icon">👟</text>
+        <view class="sensor-name">今日步数</view>
+        <view class="sensor-val">{{sensor.steps || '—'}}</view>
+      </view>
+      <view class="sensor-tile">
+        <text class="sensor-icon">💡</text>
+        <view class="sensor-name">背光</view>
+        <view class="sensor-val">{{sensor.light !== '' ? sensor.light : '—'}}</view>
+      </view>
+    </view>
+
+    <view class="divider"></view>
+
+    <!-- 背光滑块 -->
+    <view class="slider-label">
+      <text>💡 调节背光亮度</text>
+      <text class="slider-value">{{light}}</text>
+    </view>
+    <slider
+      min="0" max="100" step="1"
+      value="{{light}}"
+      activeColor="#2563eb"
+      backgroundColor="#eceef2"
+      block-color="#2563eb"
+      block-size="28"
+      show-value="{{false}}"
+      bindchange="onLightChangeEnd"
+      bindchanging="onLightChange"
+      disabled="{{!connected || busy}}" />
+
+    <button
+      class="btn-secondary btn-tall"
+      style="margin-top: 24rpx;"
+      disabled="{{!connected || busy}}"
+      bindtap="onTapGetLight">
+      🔄 读取当前背光值
+    </button>
+
+    <view class="divider"></view>
+
+    <!-- 底部操作 -->
+    <view class="grid-2">
+      <button class="btn-secondary btn-tall" disabled="{{!connected || busy}}" bindtap="onTapSyncTime">
+        ⏰ 同步手机时间
+      </button>
+      <button class="btn-danger btn-tall" disabled="{{!connected || busy}}" bindtap="onTapOTA">
+        ⬆️ OTA 升级
+      </button>
+    </view>
+  </view>
+
+  <!-- ═══════════ OTA / BootLoader 操作区 ═══════════ -->
+  <view class="card ota-card">
+    <view class="card-title" bindtap="onTapToggleOTACard" style="cursor:pointer;">
+      <text>🔧 OTA / BootLoader 操作</text>
+      <text style="margin-left:auto; font-size:24rpx; color:#9ca3af; font-weight:normal;">
+        {{otaMode ? '▼ 展开' : '▶ 收起'}}
+      </text>
+    </view>
+
+    <block wx:if="{{otaMode}}">
+      <view class="row" style="border:none; padding:0;">
+        <text class="row-label">当前阶段</text>
+        <text class="row-value">{{otaStepText}}</text>
+      </view>
+
+      <!-- 阶段导航点 -->
+      <view class="ota-steps">
+        <view class="ota-step {{otaStep === 'idle' ? 'step-now' : ''}} {{otaStep !== 'idle' ? 'step-pass' : ''}}"><text>① 待机</text></view>
+        <view class="ota-step-arr"></view>
+        <view class="ota-step {{otaStep === 'jumpBL' ? 'step-now' : ''}} {{otaStep === 'reconnect' || otaStep === 'handshake' || otaStep === 'sending' || otaStep === 'done' ? 'step-pass' : ''}}"><text>② 跳 BL</text></view>
+        <view class="ota-step-arr"></view>
+        <view class="ota-step {{otaStep === 'reconnect' ? 'step-now' : ''}} {{otaStep === 'handshake' || otaStep === 'sending' || otaStep === 'done' ? 'step-pass' : ''}}"><text>③ 重连</text></view>
+        <view class="ota-step-arr"></view>
+        <view class="ota-step {{otaStep === 'handshake' ? 'step-now' : ''}} {{otaStep === 'sending' || otaStep === 'done' ? 'step-pass' : ''}}"><text>④ 握手</text></view>
+        <view class="ota-step-arr"></view>
+        <view class="ota-step {{otaStep === 'sending' ? 'step-now' : ''}} {{otaStep === 'done' ? 'step-pass' : ''}}"><text>⑤ 传输</text></view>
+        <view class="ota-step-arr"></view>
+        <view class="ota-step {{otaStep === 'done' ? 'step-now step-done' : ''}}"><text>⑥ 完成</text></view>
+      </view>
+
+      <view class="divider"></view>
+
+      <!-- 1. 快捷按键行（对应 BootLoader 菜单 1 / 3 / a） -->
+      <view class="ota-key-row">
+        <button class="btn-primary btn-tall ota-key"
+                disabled="{{!connected || busy || otaStep === 'sending'}}"
+                bindtap="onTapBLKey1">
+          1. 进入下载
+        </button>
+        <button class="btn-secondary btn-tall ota-key"
+                disabled="{{!connected || busy}}"
+                bindtap="onTapBLKey3">
+          3. 跳回 APP
+        </button>
+        <button class="btn-ghost btn-tall ota-key"
+                disabled="{{!connected}}"
+                bindtap="onTapBLKeyA">
+          a. 中止会话
+        </button>
+      </view>
+
+      <view class="divider"></view>
+
+      <!-- 2. 固件选择 -->
+      <button
+        class="btn-secondary btn-tall"
+        bindtap="onTapPickFw"
+        disabled="{{busy}}">
+        📁 选择固件文件 (.bin / .hex)
+      </button>
+      <view wx:if="{{fwName}}" class="fw-meta">
+        <view class="fw-meta-row">
+          <text class="fw-meta-label">文件名</text>
+          <text class="fw-meta-value">{{fwName}}</text>
+        </view>
+        <view class="fw-meta-row">
+          <text class="fw-meta-label">大小</text>
+          <text class="fw-meta-value">{{fwSize}} B （{{fwSizeKBText}} KB）</text>
+        </view>
+      </view>
+
+      <view style="height:16rpx;"></view>
+
+      <button
+        class="btn-primary btn-tall"
+        bindtap="onTapStartYmodem"
+        loading="{{otaStep === 'sending'}}"
+        disabled="{{!connected || busy || !fwName || otaStep === 'sending'}}">
+        ⬆️ 开始 Ymodem 传输
+      </button>
+      <view wx:if="{{otaStep !== 'handshake' && otaStep !== 'sending' && otaStep !== 'done' && connected}}" class="ota-hint">
+        💡 尚未握手，点击此按钮将自动发送 "1" 并等待 "C" 握手后传输
+      </view>
+      <view wx:if="{{otaStep === 'handshake' && connected}}" class="ota-hint ota-hint-ok">
+        ✅ 已握手成功，可以直接点上方按钮开始传输
+      </view>
+
+      <view class="divider"></view>
+
+      <!-- 3. 进度条 -->
+      <view class="slider-label">
+        <text>📊 OTA 进度</text>
+        <text class="slider-value">{{otaProgress}} %</text>
+      </view>
+      <view class="ota-progress-bar">
+        <view class="ota-progress-fill" style="width: {{otaProgress}}%;"></view>
+      </view>
+      <view class="sensor-name" style="text-align:right; margin-top:6rpx;">
+        数据包：{{otaPkt}} / {{otaPktTotal || '?'}}
+      </view>
+
+      <view class="divider"></view>
+
+      <!-- 4. OTA 日志（Raw 字节流解码 + Ymodem 状态） -->
+      <view class="card-title" style="margin-bottom:12rpx;">
+        <text style="font-size:26rpx;">OTA 交互日志</text>
+        <text style="margin-left:auto; font-size:22rpx; color:#9ca3af; font-weight:normal;" bindtap="clearOtaLog">清空</text>
+      </view>
+      <view class="ota-log-box">
+        <block wx:for="{{otaLog}}" wx:key="index">
+          <view class="ota-log-line">{{item}}</view>
+        </block>
+        <block wx:if="{{otaLog.length === 0}}">
+          <view style="color:#9ca3af; text-align:center; padding:20rpx 0;">
+            点击「OTA 升级」按钮或手动展开本卡片开始…
+          </view>
+        </block>
+      </view>
+    </block>
+  </view>
+
+  <!-- ═══════════ 通讯日志 ═══════════ -->
+  <view class="card">
+    <view class="card-title">
+      <text>通讯日志</text>
+      <text style="margin-left:auto; font-size:22rpx; color:#9ca3af; font-weight:normal;" bindtap="clearLog">清空</text>
+    </view>
+    <view class="log-box">
+      <block wx:for="{{logs}}" wx:key="index">
+        <view class="{{item.level === 'tx' ? 'log-tx' : (item.level === 'rx' ? 'log-rx' : (item.level === 'err' ? 'log-err' : (item.level === 'ok' ? 'log-ok' : 'log-info')))}}">{{item.line}}</view>
+      </block>
+      <block wx:if="{{logs.length === 0}}">
+        <view style="color:#9ca3af; text-align:center; padding:20rpx 0;">
+          暂无数据，点击「扫描手表」开始…
+        </view>
+      </block>
+    </view>
+  </view>
+
+  <view style="height: 80rpx;"></view>
+</view>
