@@ -480,7 +480,17 @@ function isOneLineResponse(line) {
   if (line.indexOf('VERSION=') === 0 ||
       line.indexOf('LIGHT=') === 0 ||
       line.indexOf('LIGHT SET=') === 0 ||
-      line.indexOf('LIGHT ERR') === 0) {
+      line.indexOf('LIGHT ERR') === 0 ||
+      line.indexOf('WRIST=') === 0 ||
+      line.indexOf('WRIST SET=') === 0 ||
+      line.indexOf('WRIST ERR') === 0 ||
+      line.indexOf('LTIME=') === 0 ||
+      line.indexOf('LTIME SET=') === 0 ||
+      line.indexOf('LTIME ERR') === 0 ||
+      line.indexOf('TTIME=') === 0 ||
+      line.indexOf('TTIME SET=') === 0 ||
+      line.indexOf('TTIME ERR') === 0 ||
+      line.indexOf('HRREPORT=') === 0) {
     return true;
   }
   return false;

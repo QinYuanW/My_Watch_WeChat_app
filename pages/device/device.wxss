@@ -168,3 +168,33 @@
 .notify-input::placeholder {
   color: var(--text-mute);
 }
+
+/* ============== 手表设置 ============== */
+.setting-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24rpx 0;
+  border-bottom: 1rpx solid var(--border);
+}
+
+.setting-item:last-of-type {
+  border-bottom: none;
+}
+
+.setting-label {
+  font-size: 28rpx;
+  color: var(--text);
+}
+
+.picker-text {
+  font-size: 28rpx;
+  color: var(--primary);
+  padding: 8rpx 20rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 12rpx;
+}
+
+.setting-sync {
+  margin-top: 24rpx;
+}

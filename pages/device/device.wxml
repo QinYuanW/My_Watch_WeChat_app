@@ -52,6 +52,28 @@
       block-size="24"/>
   </view>
 
+  <!-- ═══════════ 手表设置 ═══════════ -->
+  <view class="card">
+    <view class="card-title">手表设置</view>
+    <view class="setting-item">
+      <text class="setting-label">抬腕亮屏</text>
+      <switch checked="{{wristOn}}" disabled="{{!connected}}" bindchange="onWristChange" color="#2563eb"/>
+    </view>
+    <view class="setting-item">
+      <text class="setting-label">常亮时间</text>
+      <picker range="{{ltimeOptions}}" value="{{ltimeIndex}}" disabled="{{!connected}}" bindchange="onLTimeChange">
+        <view class="picker-text">{{ltime}} 秒</view>
+      </picker>
+    </view>
+    <view class="setting-item">
+      <text class="setting-label">熄屏时间</text>
+      <picker range="{{ttimeOptions}}" value="{{ttimeIndex}}" disabled="{{!connected}}" bindchange="onTTimeChange">
+        <view class="picker-text">{{ttime}} 秒</view>
+      </picker>
+    </view>
+    <button class="btn-primary setting-sync" disabled="{{!connected || busy}}" bindtap="onSyncTime">同步时间</button>
+  </view>
+
   <!-- ═══════════ 通知推送 ═══════════ -->
   <view class="card">
     <view class="card-title">通知推送</view>

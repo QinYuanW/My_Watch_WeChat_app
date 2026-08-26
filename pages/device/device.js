@@ -26,6 +26,15 @@ Page({
     // 通知
     notifySender: '',
     notifyContent: '',
+
+    // 手表设置
+    wristOn: false,
+    ltimeOptions: [10, 15, 20, 30, 45, 60],
+    ltimeIndex: 0,
+    ltime: 10,
+    ttimeOptions: [15, 20, 25, 35, 50, 65],
+    ttimeIndex: 0,
+    ttime: 15,
   },
 
   onLoad() {
@@ -51,6 +60,21 @@ Page({
       }).catch(() => {});
       proto.getLight().then(r => {
         if (r.light != null) this.setData({ light: r.light });
+      }).catch(() => {});
+      proto.getWrist().then(r => {
+        this.setData({ wristOn: r.on });
+      }).catch(() => {});
+      proto.getLTime().then(r => {
+        if (r.value != null) {
+          const idx = this.data.ltimeOptions.indexOf(r.value);
+          this.setData({ ltime: r.value, ltimeIndex: idx >= 0 ? idx : 0 });
+        }
+      }).catch(() => {});
+      proto.getTTime().then(r => {
+        if (r.value != null) {
+          const idx = this.data.ttimeOptions.indexOf(r.value);
+          this.setData({ ttime: r.value, ttimeIndex: idx >= 0 ? idx : 0 });
+        }
       }).catch(() => {});
     }
   },
@@ -118,6 +142,90 @@ Page({
       }
     }).catch(() => {
       wx.showToast({ title: '推送失败', icon: 'none' });
+    }).then(() => this.setData({ busy: false }));
+  },
+
+  // 手表设置：抬腕亮屏
+  onWristChange(e) {
+    const on = e.detail.value;
+    if (!this.data.connected) {
+      wx.showToast({ title: '请先连接设备', icon: 'none' });
+      return;
+    }
+    if (this.data.busy) return;
+    this.setData({ busy: true });
+    proto.setWrist(on).then(r => {
+      if (r.ok) {
+        this.setData({ wristOn: r.on });
+        wx.showToast({ title: r.on ? '已开启抬腕亮屏' : '已关闭抬腕亮屏', icon: 'none' });
+      } else {
+        wx.showToast({ title: '设置失败', icon: 'none' });
+      }
+    }).catch(() => {
+      wx.showToast({ title: '设置失败', icon: 'none' });
+    }).then(() => this.setData({ busy: false }));
+  },
+
+  // 手表设置：常亮时间
+  onLTimeChange(e) {
+    const idx = Number(e.detail.value);
+    const v = this.data.ltimeOptions[idx];
+    if (!this.data.connected) {
+      wx.showToast({ title: '请先连接设备', icon: 'none' });
+      return;
+    }
+    if (this.data.busy) return;
+    this.setData({ busy: true });
+    proto.setLTime(v).then(r => {
+      if (r.ok) {
+        this.setData({ ltime: r.value != null ? r.value : v, ltimeIndex: idx });
+        wx.showToast({ title: '常亮时间已设为 ' + (r.value != null ? r.value : v) + 's', icon: 'none' });
+      } else {
+        wx.showToast({ title: '设置失败', icon: 'none' });
+      }
+    }).catch(() => {
+      wx.showToast({ title: '设置失败', icon: 'none' });
+    }).then(() => this.setData({ busy: false }));
+  },
+
+  // 手表设置：熄屏时间
+  onTTimeChange(e) {
+    const idx = Number(e.detail.value);
+    const v = this.data.ttimeOptions[idx];
+    if (!this.data.connected) {
+      wx.showToast({ title: '请先连接设备', icon: 'none' });
+      return;
+    }
+    if (this.data.busy) return;
+    this.setData({ busy: true });
+    proto.setTTime(v).then(r => {
+      if (r.ok) {
+        this.setData({ ttime: r.value != null ? r.value : v, ttimeIndex: idx });
+        wx.showToast({ title: '熄屏时间已设为 ' + (r.value != null ? r.value : v) + 's', icon: 'none' });
+      } else {
+        wx.showToast({ title: '设置失败', icon: 'none' });
+      }
+    }).catch(() => {
+      wx.showToast({ title: '设置失败', icon: 'none' });
+    }).then(() => this.setData({ busy: false }));
+  },
+
+  // 同步时间
+  onSyncTime() {
+    if (!this.data.connected) {
+      wx.showToast({ title: '请先连接设备', icon: 'none' });
+      return;
+    }
+    if (this.data.busy) return;
+    this.setData({ busy: true });
+    proto.syncTime().then(r => {
+      if (r.ok) {
+        wx.showToast({ title: '时间已同步', icon: 'success' });
+      } else {
+        wx.showToast({ title: '同步失败', icon: 'none' });
+      }
+    }).catch(() => {
+      wx.showToast({ title: '同步失败', icon: 'none' });
     }).then(() => this.setData({ busy: false }));
   },
 });

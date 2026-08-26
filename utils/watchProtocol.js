@@ -252,6 +252,84 @@ function sendNotify(app, sender, content) {
   });
 }
 
+// ---------- 10. 抬腕亮屏 ----------
+function getWrist() {
+  ensureReady();
+  return _ble.send('OV+GETWRIST').then((lines) => {
+    const s = findLine(lines, 'WRIST=');
+    return { on: s === '1', raw: lines };
+  });
+}
+
+function setWrist(on) {
+  ensureReady();
+  const v = on ? 1 : 0;
+  return _ble.send('OV+SETWRIST=' + v).then((lines) => {
+    const setLine = findLine(lines, 'WRIST SET=');
+    if (setLine != null) {
+      return { ok: true, on: setLine === '1', raw: lines };
+    }
+    if (findLine(lines, 'WRIST ERR FMT') != null) {
+      return { ok: false, error: 'FORMAT', raw: lines };
+    }
+    return { ok: false, error: 'UNKNOWN', raw: lines };
+  });
+}
+
+// ---------- 11. 常亮时间 ----------
+function getLTime() {
+  ensureReady();
+  return _ble.send('OV+GETLTIME').then((lines) => {
+    const s = findLine(lines, 'LTIME=');
+    const n = (s != null) ? parseInt(s, 10) : null;
+    return { value: isNaN(n) ? null : n, raw: lines };
+  });
+}
+
+function setLTime(v) {
+  ensureReady();
+  if ([10, 15, 20, 30, 45, 60].indexOf(v) === -1) {
+    return Promise.reject(new Error('常亮时间范围：10/15/20/30/45/60 秒'));
+  }
+  return _ble.send('OV+SETLTIME=' + v).then((lines) => {
+    const setLine = findLine(lines, 'LTIME SET=');
+    if (setLine != null) {
+      const n = parseInt(setLine, 10);
+      return { ok: true, value: isNaN(n) ? null : n, raw: lines };
+    }
+    if (findLine(lines, 'LTIME ERR FMT') != null) return { ok: false, error: 'FORMAT', raw: lines };
+    if (findLine(lines, 'LTIME ERR RANGE') != null) return { ok: false, error: 'RANGE', raw: lines };
+    return { ok: false, error: 'UNKNOWN', raw: lines };
+  });
+}
+
+// ---------- 12. 熄屏时间 ----------
+function getTTime() {
+  ensureReady();
+  return _ble.send('OV+GETTTIME').then((lines) => {
+    const s = findLine(lines, 'TTIME=');
+    const n = (s != null) ? parseInt(s, 10) : null;
+    return { value: isNaN(n) ? null : n, raw: lines };
+  });
+}
+
+function setTTime(v) {
+  ensureReady();
+  if ([15, 20, 25, 35, 50, 65].indexOf(v) === -1) {
+    return Promise.reject(new Error('熄屏时间范围：15/20/25/35/50/65 秒'));
+  }
+  return _ble.send('OV+SETTTIME=' + v).then((lines) => {
+    const setLine = findLine(lines, 'TTIME SET=');
+    if (setLine != null) {
+      const n = parseInt(setLine, 10);
+      return { ok: true, value: isNaN(n) ? null : n, raw: lines };
+    }
+    if (findLine(lines, 'TTIME ERR FMT') != null) return { ok: false, error: 'FORMAT', raw: lines };
+    if (findLine(lines, 'TTIME ERR RANGE') != null) return { ok: false, error: 'RANGE', raw: lines };
+    return { ok: false, error: 'UNKNOWN', raw: lines };
+  });
+}
+
 // ==================== BootLoader / OTA 流程（Raw 模式） ====================
 //  工作流：
 //   1. enterOTA() 手表跳到 BootLoader，BLE 自动断开 + 重启广播
@@ -342,6 +420,12 @@ module.exports = {
   setHRReport,
   onHRData,
   sendNotify,
+  getWrist,
+  setWrist,
+  getLTime,
+  setLTime,
+  getTTime,
+  setTTime,
 
   // ---- BootLoader 操作 ----
   bootEnterRawMode,
