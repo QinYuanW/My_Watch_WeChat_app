@@ -1,6 +1,14 @@
 // app.js
 App({
   onLaunch() {
+    // 初始化云开发环境（历史心率数据云端存储）
+    if (wx.cloud) {
+      wx.cloud.init({
+        env: 'cloud1-d7glyn1jr2f87d3f6',
+        traceUser: true,
+      });
+    }
+
     // 启动时检查蓝牙适配器是否可用；Windows 模拟器会报"暂不支持"，直接忽略不打日志
     wx.openBluetoothAdapter({
       success: () => {

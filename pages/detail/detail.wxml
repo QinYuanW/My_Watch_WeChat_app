@@ -1,0 +1,74 @@
+<!--pages/detail/detail.wxml — OV Watch 健康数据详情页 -->
+<view class="container">
+
+  <view class="detail-header">
+    <view class="header-icon-wrap icon-{{feature}}">
+      <text class="header-icon">{{icon}}</text>
+    </view>
+    <view class="header-title-wrap">
+      <text class="header-title">{{title}}</text>
+      <text class="header-subtitle">{{subtitle}}</text>
+    </view>
+  </view>
+
+  <view class="main-value-card">
+    <text class="main-value">{{currentValue}}</text>
+    <text class="main-unit">{{unit}}</text>
+    <text class="main-label">当前/最新</text>
+  </view>
+
+  <view class="chart-card">
+    <view class="card-header">
+      <text class="chart-title">历史趋势</text>
+      <text class="chart-range">{{dateRange}}</text>
+    </view>
+    <view class="chart-wrapper">
+      <canvas type="2d" id="trendChart" class="chart-canvas"></canvas>
+    </view>
+  </view>
+
+  <view class="stats-grid">
+    <view class="stat-item">
+      <text class="stat-value">{{stats.avg}}</text>
+      <text class="stat-unit">{{unit}}</text>
+      <text class="stat-label">平均</text>
+    </view>
+    <view class="stat-item">
+      <text class="stat-value">{{stats.min}}</text>
+      <text class="stat-unit">{{unit}}</text>
+      <text class="stat-label">最低</text>
+    </view>
+    <view class="stat-item">
+      <text class="stat-value">{{stats.max}}</text>
+      <text class="stat-unit">{{unit}}</text>
+      <text class="stat-label">最高</text>
+    </view>
+    <view class="stat-item">
+      <text class="stat-value">{{stats.count}}</text>
+      <text class="stat-unit">次</text>
+      <text class="stat-label">测量</text>
+    </view>
+  </view>
+
+  <view class="list-card" wx:if="{{historyList.length > 0}}">
+    <view class="card-header">
+      <text class="chart-title">历史记录</text>
+    </view>
+    <view class="history-list">
+      <view class="history-item" wx:for="{{historyList}}" wx:key="ts">
+        <view class="history-time">{{item.timeText}}</view>
+        <view class="history-value-wrap">
+          <text class="history-value">{{item.value}}</text>
+          <text class="history-unit">{{unit}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="empty-state" wx:if="{{historyList.length === 0}}">
+    <text class="empty-icon">📊</text>
+    <text class="empty-text">暂无历史数据</text>
+    <text class="empty-hint">测量一次后即可查看趋势</text>
+  </view>
+
+</view>

@@ -182,6 +182,76 @@ function enterOTA() {
   });
 }
 
+// ---------- 8. 心率实时上报开关 ----------
+/**
+ * 开启/关闭手表的实时心率上报。
+ * 开启后：进入心率页面时会收到 HRSTART / HR=xx / HREND 上报行。
+ */
+function setHRReport(on) {
+  ensureReady();
+  return _ble.send(on ? 'OV+HRREPORT=1' : 'OV+HRREPORT=0');
+}
+
+/**
+ * 注册心率上报行监听（需 bleService 支持 onLine）。
+ * 回调会收到解析后的结构化事件：
+ *   { type: 'start' }
+ *   { type: 'sample', hr: number }
+ *   { type: 'summary', avg, min, max, n }
+ *   { type: 'unknown', line }
+ * 返回注销函数。
+ */
+function onHRData(cb) {
+  if (!_ble.onLine) {
+    throw new Error('bleService 未提供 onLine 接口');
+  }
+  return _ble.onLine((line) => {
+    let evt = null;
+    if (line === 'HRSTART') {
+      evt = { type: 'start' };
+    } else if (line.indexOf('HR=') === 0) {
+      const n = parseInt(line.slice(3), 10);
+      evt = { type: 'sample', hr: isNaN(n) ? null : n };
+    } else if (line.indexOf('HREND') === 0) {
+      // HREND,avg=76,min=72,max=80,n=28
+      const cur = {};
+      const parts = line.slice(6).split(',');
+      for (const p of parts) {
+        const m = p.split('=');
+        if (m.length === 2) cur[m[0].trim()] = parseInt(m[1], 10);
+      }
+      evt = {
+        type: 'summary',
+        avg: isNaN(cur.avg) ? null : cur.avg,
+        min: isNaN(cur.min) ? null : cur.min,
+        max: isNaN(cur.max) ? null : cur.max,
+        n: isNaN(cur.n) ? null : cur.n,
+      };
+    }
+    if (evt) {
+      try { cb(evt); } catch (e) {}
+    } else {
+      try { cb({ type: 'unknown', line }); } catch (e) {}
+    }
+  });
+}
+
+// ---------- 9. 通知推送 ----------
+/**
+ * 推送一条通知到手表扬声器/通知列表。
+ * app: 'WX'（微信）或 'QQ'；sender: 发送人昵称；content: 消息内容
+ * 固件侧回复 NOTIFY OK / NOTIFY ERR。
+ */
+function sendNotify(app, sender, content) {
+  ensureReady();
+  const cmd = `OV+NOTIFY=${app}|${sender}|${content}`;
+  return _ble.send(cmd).then((lines) => {
+    if (lines.indexOf('NOTIFY OK') !== -1) return { ok: true, raw: lines };
+    if (lines.indexOf('NOTIFY ERR') !== -1) return { ok: false, error: 'GENERAL', raw: lines };
+    return { ok: false, error: 'UNKNOWN', raw: lines };
+  });
+}
+
 // ==================== BootLoader / OTA 流程（Raw 模式） ====================
 //  工作流：
 //   1. enterOTA() 手表跳到 BootLoader，BLE 自动断开 + 重启广播
@@ -269,6 +339,9 @@ module.exports = {
   queryAll,
   syncTime,
   enterOTA,
+  setHRReport,
+  onHRData,
+  sendNotify,
 
   // ---- BootLoader 操作 ----
   bootEnterRawMode,

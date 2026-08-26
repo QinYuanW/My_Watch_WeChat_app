@@ -1,0 +1,230 @@
+/* pages/detail/detail.wxss — OV Watch 健康数据详情页 */
+
+.container {
+  padding: 24rpx 32rpx 120rpx;
+  min-height: 100vh;
+  box-sizing: border-box;
+}
+
+/* ============== 头部 ============== */
+.detail-header {
+  display: flex;
+  align-items: center;
+  gap: 24rpx;
+  padding: 24rpx 0 40rpx;
+}
+
+.header-icon-wrap {
+  width: 120rpx;
+  height: 120rpx;
+  border-radius: 32rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon-heartRate { background: #fee2e2; }
+.icon-spo2 { background: #dbeafe; }
+.icon-steps { background: #dcfce7; }
+.icon-sleep { background: #ede9fe; }
+.icon-temperature { background: #ffedd5; }
+.icon-humidity { background: #cffafe; }
+
+.header-icon {
+  font-size: 60rpx;
+}
+
+.header-title-wrap {
+  flex: 1;
+}
+
+.header-title {
+  font-size: 40rpx;
+  font-weight: 700;
+  color: var(--text);
+  display: block;
+}
+
+.header-subtitle {
+  font-size: 26rpx;
+  color: var(--text-mute);
+  margin-top: 8rpx;
+  display: block;
+}
+
+/* ============== 主数值卡片 ============== */
+.main-value-card {
+  background: var(--surface);
+  border-radius: 32rpx;
+  padding: 48rpx 40rpx;
+  margin-bottom: 32rpx;
+  box-shadow: var(--shadow);
+  text-align: center;
+}
+
+.main-value {
+  font-size: 96rpx;
+  font-weight: 800;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.main-unit {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: var(--text-dim);
+  margin-left: 8rpx;
+}
+
+.main-label {
+  display: block;
+  margin-top: 16rpx;
+  font-size: 26rpx;
+  color: var(--text-mute);
+}
+
+/* ============== 图表卡片 ============== */
+.chart-card,
+.list-card {
+  background: var(--surface);
+  border-radius: 32rpx;
+  padding: 32rpx;
+  margin-bottom: 32rpx;
+  box-shadow: var(--shadow);
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24rpx;
+}
+
+.chart-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.chart-range {
+  font-size: 24rpx;
+  color: var(--text-mute);
+}
+
+.chart-wrapper {
+  width: 100%;
+  height: 300rpx;
+}
+
+.chart-canvas {
+  width: 100%;
+  height: 100%;
+}
+
+/* ============== 统计网格 ============== */
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24rpx;
+  margin-bottom: 32rpx;
+}
+
+.stat-item {
+  background: var(--surface);
+  border-radius: 24rpx;
+  padding: 32rpx 24rpx;
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.stat-value {
+  font-size: 48rpx;
+  font-weight: 700;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-unit {
+  font-size: 24rpx;
+  color: var(--text-mute);
+  margin-left: 4rpx;
+}
+
+.stat-label {
+  font-size: 26rpx;
+  color: var(--text-dim);
+  margin-top: 12rpx;
+}
+
+/* ============== 历史列表 ============== */
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+}
+
+.history-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20rpx 0;
+  border-bottom: 1rpx solid var(--border);
+}
+
+.history-item:last-child {
+  border-bottom: none;
+}
+
+.history-time {
+  font-size: 28rpx;
+  color: var(--text-dim);
+}
+
+.history-value-wrap {
+  display: flex;
+  align-items: baseline;
+}
+
+.history-value {
+  font-size: 36rpx;
+  font-weight: 600;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.history-unit {
+  font-size: 24rpx;
+  color: var(--text-mute);
+  margin-left: 4rpx;
+}
+
+/* ============== 空状态 ============== */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80rpx 0;
+  text-align: center;
+}
+
+.empty-icon {
+  font-size: 80rpx;
+  margin-bottom: 24rpx;
+  opacity: 0.6;
+}
+
+.empty-text {
+  font-size: 32rpx;
+  color: var(--text-dim);
+  margin-bottom: 8rpx;
+}
+
+.empty-hint {
+  font-size: 26rpx;
+  color: var(--text-mute);
+}

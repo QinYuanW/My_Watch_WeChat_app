@@ -1,6 +1,10 @@
 {
   "pages": [
-    "pages/index/index"
+    "pages/index/index",
+    "pages/detail/detail",
+    "pages/device/device",
+    "pages/profile/profile",
+    "pages/dev/dev"
   ],
   "window": {
     "backgroundTextStyle": "light",
@@ -8,6 +12,32 @@
     "navigationBarTitleText": "OV Watch",
     "navigationBarTextStyle": "black",
     "backgroundColor": "#f5f7fa"
+  },
+  "tabBar": {
+    "color": "#9ca3af",
+    "selectedColor": "#2563eb",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "black",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "text": "首页",
+        "iconPath": "images/tab/home.png",
+        "selectedIconPath": "images/tab/home_active.png"
+      },
+      {
+        "pagePath": "pages/device/device",
+        "text": "设备",
+        "iconPath": "images/tab/device.png",
+        "selectedIconPath": "images/tab/device_active.png"
+      },
+      {
+        "pagePath": "pages/profile/profile",
+        "text": "我的",
+        "iconPath": "images/tab/profile.png",
+        "selectedIconPath": "images/tab/profile_active.png"
+      }
+    ]
   },
   "requiredPrivateInfos": [
     "getLocation",

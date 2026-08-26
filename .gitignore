@@ -36,3 +36,6 @@ Desktop.ini
 *.pem
 *.key
 *.p12
+
+# 工作区会话记忆
+.workbuddy/

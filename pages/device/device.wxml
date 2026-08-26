@@ -1,0 +1,66 @@
+<!--pages/device/device.wxml — OV Watch 设备控制页 -->
+<view class="container">
+
+  <!-- ═══════════ 设备状态卡 ═══════════ -->
+  <view class="card status-card">
+    <view class="status-left">
+      <view class="status-dot {{connected ? 'dot-green' : 'dot-gray'}}"></view>
+      <view class="status-text">
+        <text class="status-title">{{connected ? '已连接' : '未连接'}}</text>
+        <text class="status-sub" wx:if="{{connected}}">{{deviceName}}{{version ? ' · V' + version : ''}}</text>
+        <text class="status-sub" wx:else>请在首页连接手表</text>
+      </view>
+    </view>
+    <view class="status-right" wx:if="{{!connected}}" bindtap="onGoConnect">
+      <text class="connect-btn">去连接</text>
+    </view>
+  </view>
+
+  <!-- ═══════════ 表盘切换 ═══════════ -->
+  <view class="card">
+    <view class="card-title">表盘切换</view>
+    <view class="face-grid">
+      <view
+        wx:for="{{faces}}"
+        wx:key="index"
+        class="face-item {{selectedFace === index ? 'face-selected' : ''}}"
+        bindtap="onSelectFace"
+        data-index="{{index}}">
+        <view class="face-thumb" style="background: {{item.bg}};">
+          <text class="face-emoji">{{item.emoji}}</text>
+        </view>
+        <text class="face-name">{{item.name}}</text>
+        <view class="face-check" wx:if="{{selectedFace === index}}">✓</view>
+      </view>
+    </view>
+    <text class="face-hint">表盘切换将在固件支持后生效</text>
+  </view>
+
+  <!-- ═══════════ 背光亮度 ═══════════ -->
+  <view class="card">
+    <view class="card-title">背光亮度</view>
+    <view class="slider-label">
+      <text>屏幕亮度</text>
+      <text class="slider-value">{{light}}</text>
+    </view>
+    <slider
+      min="0" max="100" value="{{light}}"
+      disabled="{{!connected}}"
+      bindchanging="onLightChanging"
+      bindchange="onLightChange"
+      activeColor="#2563eb"
+      block-size="24"/>
+  </view>
+
+  <!-- ═══════════ 通知推送 ═══════════ -->
+  <view class="card">
+    <view class="card-title">通知推送</view>
+    <view class="notify-form">
+      <input class="notify-input" placeholder="发送人昵称" value="{{notifySender}}" bindinput="onSenderInput"/>
+      <input class="notify-input" placeholder="通知内容" value="{{notifyContent}}" bindinput="onContentInput"/>
+      <button class="btn-primary" disabled="{{!connected || busy}}" bindtap="onSendNotify">推送到手表</button>
+    </view>
+    <text class="face-hint">仅支持微信类消息（OV+NOTIFY=WX）</text>
+  </view>
+
+</view>

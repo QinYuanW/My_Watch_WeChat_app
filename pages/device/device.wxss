@@ -1,0 +1,170 @@
+/* pages/device/device.wxss — OV Watch 设备控制页 */
+
+.container {
+  padding: 24rpx 32rpx 120rpx;
+  min-height: 100vh;
+  box-sizing: border-box;
+}
+
+/* ============== 设备状态卡 ============== */
+.status-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.status-left {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  flex: 1;
+  min-width: 0;
+}
+
+.status-dot {
+  width: 20rpx;
+  height: 20rpx;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.dot-green { background: var(--green); box-shadow: 0 0 12rpx var(--green); }
+.dot-gray { background: var(--border-strong); }
+
+.status-text {
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+}
+
+.status-title {
+  font-size: 32rpx;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.status-sub {
+  font-size: 24rpx;
+  color: var(--text-mute);
+}
+
+.status-right {
+  flex-shrink: 0;
+}
+
+.connect-btn {
+  display: inline-block;
+  padding: 12rpx 28rpx;
+  background: var(--primary);
+  color: #fff;
+  border-radius: 100rpx;
+  font-size: 26rpx;
+  font-weight: 600;
+}
+
+/* ============== 表盘切换 ============== */
+.face-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24rpx;
+  margin-bottom: 20rpx;
+}
+
+.face-item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12rpx;
+  padding: 16rpx;
+  border: 2rpx solid transparent;
+  border-radius: 20rpx;
+  transition: all 0.2s ease;
+}
+
+.face-item:active {
+  transform: scale(0.96);
+}
+
+.face-selected {
+  border-color: var(--primary);
+  background: var(--primary-light);
+}
+
+.face-thumb {
+  width: 120rpx;
+  height: 140rpx;
+  border-radius: 24rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1rpx solid var(--border);
+}
+
+.face-emoji {
+  font-size: 56rpx;
+}
+
+.face-name {
+  font-size: 24rpx;
+  color: var(--text-dim);
+}
+
+.face-check {
+  position: absolute;
+  top: 8rpx;
+  right: 12rpx;
+  width: 36rpx;
+  height: 36rpx;
+  border-radius: 50%;
+  background: var(--primary);
+  color: #fff;
+  font-size: 24rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.face-hint {
+  display: block;
+  font-size: 22rpx;
+  color: var(--text-mute);
+  margin-top: 8rpx;
+}
+
+/* ============== 背光 ============== */
+.slider-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16rpx;
+  font-size: 26rpx;
+  color: var(--text-dim);
+}
+
+.slider-value {
+  font-size: 34rpx;
+  font-weight: 700;
+  color: var(--primary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ============== 通知推送 ============== */
+.notify-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.notify-input {
+  background: #f9fafb;
+  border: 1rpx solid var(--border);
+  border-radius: 16rpx;
+  padding: 20rpx 24rpx;
+  font-size: 28rpx;
+  color: var(--text);
+}
+
+.notify-input::placeholder {
+  color: var(--text-mute);
+}

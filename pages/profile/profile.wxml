@@ -1,0 +1,95 @@
+<!--pages/profile/profile.wxml — OV Watch 个人中心 -->
+<view class="container">
+
+  <!-- 用户信息卡片 -->
+  <view class="user-card">
+    <view class="avatar-wrap">
+      <view class="avatar">U</view>
+    </view>
+    <view class="user-info">
+      <text class="user-name">用户</text>
+      <text class="user-id">ID: {{userInfo._openid || '--'}}</text>
+    </view>
+  </view>
+
+  <!-- 设备信息 -->
+  <view class="card">
+    <view class="card-title">我的设备</view>
+    <view class="device-row" bindtap="onTapDeviceInfo">
+      <view class="device-icon-wrap">
+        <text class="device-icon">⌚</text>
+      </view>
+      <view class="device-info">
+        <text class="device-name">{{deviceInfo.name || '未连接'}}</text>
+        <text class="device-status {{connected ? 'status-connected' : 'status-disconnected'}}">{{connected ? '已连接' : '未连接'}}</text>
+      </view>
+      <text class="arrow">›</text>
+    </view>
+  </view>
+
+  <!-- 设置项 -->
+  <view class="card">
+    <view class="card-title">设置</view>
+    
+    <view class="setting-item" bindtap="onTapSetting" data-setting="notification">
+      <text class="setting-icon">🔔</text>
+      <text class="setting-label">通知管理</text>
+      <text class="setting-arrow">›</text>
+    </view>
+
+    <view class="setting-item" bindtap="onTapSetting" data-setting="display">
+      <text class="setting-icon">🎨</text>
+      <text class="setting-label">显示与亮度</text>
+      <text class="setting-arrow">›</text>
+    </view>
+
+    <view class="setting-item" bindtap="onTapSetting" data-setting="unit">
+      <text class="setting-icon">📐</text>
+      <text class="setting-label">单位设置</text>
+      <text class="setting-arrow">›</text>
+    </view>
+
+    <view class="setting-item" bindtap="onTapSetting" data-setting="language">
+      <text class="setting-icon">🌐</text>
+      <text class="setting-label">语言</text>
+      <text class="setting-value">简体中文</text>
+      <text class="setting-arrow">›</text>
+    </view>
+
+    <view class="setting-item" bindtap="onTapDevMode">
+      <text class="setting-icon">🛠️</text>
+      <text class="setting-label">开发者模式</text>
+      <text class="setting-arrow">›</text>
+    </view>
+  </view>
+
+  <!-- 帮助与关于 -->
+  <view class="card">
+    <view class="card-title">帮助与支持</view>
+    
+    <view class="setting-item" bindtap="onTapHelp" data-type="faq">
+      <text class="setting-icon">❓</text>
+      <text class="setting-label">常见问题</text>
+      <text class="setting-arrow">›</text>
+    </view>
+
+    <view class="setting-item" bindtap="onTapHelp" data-type="contact">
+      <text class="setting-icon">📧</text>
+      <text class="setting-label">联系我们</text>
+      <text class="setting-arrow">›</text>
+    </view>
+
+    <view class="setting-item" bindtap="onTapHelp" data-type="privacy">
+      <text class="setting-icon">🔒</text>
+      <text class="setting-label">隐私政策</text>
+      <text class="setting-arrow">›</text>
+    </view>
+  </view>
+
+  <!-- 版本信息 -->
+  <view class="version-info">
+    <text>OV Watch {{appVersion}}</text>
+    <text class="version-sub">© 2026 OV Technology</text>
+  </view>
+
+</view>

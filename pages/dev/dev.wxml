@@ -1,0 +1,116 @@
+<!--pages/dev/dev.wxml — OV Watch 开发者控制面板 -->
+<view class="container">
+
+  <view class="dev-header">
+    <text class="dev-title">开发者模式</text>
+    <text class="dev-hint">此页面仅用于功能调试</text>
+  </view>
+
+  <!-- ═══════════ 设备连接区 ═══════════ -->
+  <view class="card">
+    <view class="card-title">设备连接</view>
+    
+    <view class="status-row">
+      <text>当前状态：</text>
+      <text class="status-text {{connected ? 'connected' : 'disconnected'}}">{{connected ? '已连接' : '未连接'}}</text>
+    </view>
+
+    <block wx:if="{{deviceInfo}}">
+      <view class="info-row"><text>设备名:</text><text>{{deviceInfo.name}}</text></view>
+      <view class="info-row"><text>MAC:</text><text class="mono">{{deviceInfo.deviceId}}</text></view>
+      <view class="info-row"><text>信号:</text><text>{{deviceInfo.RSSI}} dBm</text></view>
+    </block>
+
+    <button class="btn-primary" bindtap="onTapScan" loading="{{scanning}}">
+      {{scanning ? '扫描中...' : (connected ? '断开连接' : '扫描设备')}}
+    </button>
+
+    <!-- 设备列表 -->
+    <view wx:if="{{deviceList.length > 0}}" class="device-list">
+      <view wx:for="{{deviceList}}" wx:key="deviceId" 
+            class="device-item {{item.isLast ? 'is-last' : ''}}"
+            bindtap="onTapDevice"
+            data-id="{{item.deviceId}}"
+            hover-class="device-item-hover">
+        <text class="device-name">{{item.name}}</text>
+        <text class="device-rssi">{{item.RSSI}} dBm</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- ═══════════ 快速指令 ═══════════ -->
+  <view class="card">
+    <view class="card-title">快速指令</view>
+    
+    <view class="btn-grid">
+      <button class="btn-secondary" bindtap="onTapPing" disabled="{{!connected || busy}}">连通测试</button>
+      <button class="btn-secondary" bindtap="onTapVersion" disabled="{{!connected || busy}}">读取版本</button>
+      <button class="btn-secondary" bindtap="onTapQueryAll" disabled="{{!connected || busy}}">刷新全量</button>
+      <button class="btn-secondary" bindtap="onTapSyncTime" disabled="{{!connected || busy}}">同步时间</button>
+    </view>
+
+    <view wx:if="{{version}}" class="version-info">
+      <text>固件版本: {{version}}</text>
+    </view>
+  </view>
+
+  <!-- ═══════════ 传感器数据 ═══════════ -->
+  <view class="card">
+    <view class="card-title">传感器数据</view>
+    
+    <view class="sensor-grid">
+      <view class="sensor-item"><text class="s-label">心率</text><text class="s-value">{{sensor.heartRate || '--'}}</text></view>
+      <view class="sensor-item"><text class="s-label">血氧</text><text class="s-value">{{sensor.spo2 || '--'}}</text></view>
+      <view class="sensor-item"><text class="s-label">步数</text><text class="s-value">{{sensor.steps || '--'}}</text></view>
+      <view class="sensor-item"><text class="s-label">温度</text><text class="s-value">{{sensor.temperature || '--'}}</text></view>
+      <view class="sensor-item"><text class="s-label">湿度</text><text class="s-value">{{sensor.humidity || '--'}}</text></view>
+      <view class="sensor-item"><text class="s-label">背光</text><text class="s-value">{{sensor.light || '--'}}</text></view>
+    </view>
+  </view>
+
+  <!-- ═══════════ 背光控制 ═══════════ -->
+  <view class="card">
+    <view class="card-title">背光控制</view>
+    <slider min="0" max="100" value="{{light}}" bindchange="onLightChangeEnd" show-value/>
+  </view>
+
+  <!-- ═══════════ OTA 升级 ═══════════ -->
+  <view class="card ota-card">
+    <view class="card-title">OTA 升级</view>
+    
+    <view class="ota-info" wx:if="{{otaStepText}}">
+      <text>当前阶段: {{otaStepText}}</text>
+    </view>
+
+    <view class="btn-grid">
+      <button class="btn-primary" bindtap="onTapOTA" disabled="{{!connected || busy}}">进入升级模式</button>
+      <button class="btn-secondary" bindtap="onTapPickFw" disabled="{{busy}}">选择固件</button>
+      <button class="btn-primary" bindtap="onTapStartYmodem" disabled="{{!connected || busy || !fwName}}">开始传输</button>
+      <button class="btn-ghost" bindtap="onTapBLKey3" disabled="{{!connected}}">跳回APP</button>
+    </view>
+
+    <view wx:if="{{fwName}}" class="fw-info">
+      <text>文件: {{fwName}} ({{fwSize}} B)</text>
+    </view>
+
+    <view wx:if="{{otaStep === 'sending'}}" class="ota-progress">
+      <view class="progress-bar"><view class="progress-fill" style="width: {{otaProgress}}%;"></view></view>
+      <text>{{otaProgress}}% ({{otaPkt}}/{{otaPktTotal}})</text>
+    </view>
+  </view>
+
+  <!-- ═══════════ 通讯日志 ═══════════ -->
+  <view class="card">
+    <view class="card-title">
+      <text>通讯日志</text>
+      <text class="clear-btn" bindtap="clearLog">清空</text>
+    </view>
+    <scroll-view scroll-y class="log-box">
+      <block wx:for="{{logs}}" wx:key="index">
+        <view class="log-line log-{{item.level}}">{{item.line}}</view>
+      </block>
+    </scroll-view>
+  </view>
+
+  <view style="height: 80rpx;"></view>
+</view>

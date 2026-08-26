@@ -55,8 +55,13 @@ let _rawByteQueue = [];       // 按顺序累积的单字节队列（按收到�
 let _rawByteWaiter = null;    // { expectByteSet:Set<number>, timeout:number, resolve, reject, timer }
 let _rawWriteIntervalMs = 8;   // 每 8ms 一块（SecureCRT 实测约 14ms/包，我们用更小间隔 + 靠 KT6368A 内部缓冲）
 let _postSendDelayMs = 10;     // 每次 sendRawBytes 结束后等 10ms（不再大段等待）
-let _lastWriteTime = 0;       // 上一次 writeNoResponse 成功的时间戳
+let _lastWriteTime = 0;        // 上一次 writeNoResponse 成功的时间戳
 let _bleMtu = 23;             // BLE MTU（默认 23，单包有效负载 = MTU - 3 = 20B；协商后可达 247）
+
+// ---------- 异步行监听（手表主动上报，如 HR=xx / HRSTART / HREND）----------
+// 这类行不属于任何"请求-响应"配对，需单独摘出来分发给注册的监听器
+let _asyncListeners = []; // (line) => void
+const ASYNC_PREFIXES = ['HRSTART', 'HR=', 'HREND'];
 
 // ========================= 对外 API =========================
 
@@ -296,6 +301,26 @@ function send(cmd) {
   });
 }
 
+/**
+ * 注册"异步行"监听（手表主动上报，如 HR=xx / HRSTART / HREND）。
+ * 返回注销函数。监听器不需要等待请求完成，收到即回调。
+ */
+function onLine(cb) {
+  _asyncListeners.push(cb);
+  return () => {
+    const i = _asyncListeners.indexOf(cb);
+    if (i >= 0) _asyncListeners.splice(i, 1);
+  };
+}
+
+// 判断一行是否为异步行（手表主动上报）
+function isAsyncLine(line) {
+  for (const p of ASYNC_PREFIXES) {
+    if (line.indexOf(p) === 0) return true;
+  }
+  return false;
+}
+
 // ========================= 内部实现 =========================
 
 function log(level, text) {
@@ -410,6 +435,13 @@ function handleRawChunk(chunk) {
     if (isNoise(line)) continue;
     // 干净行：先给外部 onRawLine 日志回调
     _cb.onRawLine(line);
+    // 手表主动上报的异步行（HRSTART/HR=/HREND）：分发给监听器，不进请求响应累积
+    if (isAsyncLine(line)) {
+      for (const cb of _asyncListeners.slice()) {
+        try { cb(line); } catch (e) {}
+      }
+      continue;
+    }
     // 再喂给当前请求的响应累积器
     if (_sending) {
       _responseLines.push(line);
@@ -437,10 +469,12 @@ function isNoise(line) {
  */
 function isOneLineResponse(line) {
   // 可能的结束行：
-  // OK / UNKNOWN / VERSION=xxx / LIGHT=xxx / LIGHT SET=xxx / LIGHT ERR* / TIMESETOK / TIME ERR / OK+UPGRADE
+  // OK / UNKNOWN / VERSION=xxx / LIGHT=xxx / LIGHT SET=xxx / LIGHT ERR* / TIMESETOK / TIME ERR / OK+UPGRADE / NOTIFY OK / NOTIFY ERR
   if (line === 'OK' || line === 'UNKNOWN' ||
       line === 'TIMESETOK' || line === 'TIME ERR' ||
-      line.indexOf('OK+UPGRADE') === 0) {
+      line.indexOf('OK+UPGRADE') === 0 ||
+      line.indexOf('NOTIFY OK') === 0 ||
+      line.indexOf('NOTIFY ERR') === 0) {
     return true;
   }
   if (line.indexOf('VERSION=') === 0 ||
@@ -470,7 +504,9 @@ function processQueue() {
 
   log('info', `发送指令：${item.cmd}`);
 
-  const buffer = str2ab(item.cmd);
+  // 固件 UART 接收现在按 \r\n 拼整行，发送时统一补行尾
+  const cmdWithCrlf = /(\r\n|\n|\r)$/.test(item.cmd) ? item.cmd : item.cmd + '\r\n';
+  const buffer = str2ab(cmdWithCrlf);
   wx.writeBLECharacteristicValue({
     deviceId: _deviceId,
     serviceId: SERVICE_UUID,
@@ -549,7 +585,12 @@ module.exports = {
   connect,
   disconnect,
   send,
+  onLine,
   isConnected() { return _connected; },
+  getDeviceInfo() {
+    if (!_connected || !_deviceId) return null;
+    return { deviceId: _deviceId, name: 'OV Watch', RSSI: null };
+  },
   isScanning,
 
   // ---- Raw 模式 API（给 OTA Ymodem 用）----
