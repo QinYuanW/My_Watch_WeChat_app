@@ -1,0 +1,126 @@
+<!--pages/sleep/sleep.wxml — OV Watch 睡眠报告页 -->
+<view class="container">
+
+  <!-- 加载中 -->
+  <view wx:if="{{loading}}" class="empty-state">
+    <text class="empty-icon">⏳</text>
+    <text class="empty-text">正在拉取睡眠数据...</text>
+  </view>
+
+  <!-- 错误提示（无数据时的整页态） -->
+  <view wx:elif="{{errorMsg && !latest}}" class="empty-state">
+    <text class="empty-icon">💤</text>
+    <text class="empty-text">{{errorMsg}}</text>
+    <view class="retry-btn" bindtap="onTapRetry">重试</view>
+  </view>
+
+  <!-- 无数据 -->
+  <view wx:elif="{{!latest}}" class="empty-state">
+    <text class="empty-icon">😴</text>
+    <text class="empty-text">还没有睡眠记录</text>
+    <text class="empty-hint">佩戴手表睡一晚后，第二天连接即可查看</text>
+  </view>
+
+  <!-- 数据主体 -->
+  <block wx:else>
+
+    <!-- 有数据时的顶部提示横幅（如"手表未连接，当前显示云端记录"） -->
+    <view wx:if="{{errorMsg}}" class="banner-state">
+      <text class="banner-text">{{errorMsg}}</text>
+      <view class="banner-retry" bindtap="onTapRetry">重试</view>
+    </view>
+
+    <!-- 最近一晚摘要 -->
+    <view class="night-card">
+      <view class="night-header">
+        <text class="night-title">{{latest.dateText || '最近一晚'}}</text>
+        <view class="score-badge">
+          <text class="score-value">{{latest.durHM}}</text>
+        </view>
+      </view>
+      <view class="night-grid">
+        <view class="night-item">
+          <text class="night-item-value">{{latest.onsetHM}}</text>
+          <text class="night-item-label">入睡</text>
+        </view>
+        <view class="night-item">
+          <text class="night-item-value">{{latest.wakeHM}}</text>
+          <text class="night-item-label">醒来</text>
+        </view>
+        <view class="night-item">
+          <text class="night-item-value">{{latest.durHM}}</text>
+          <text class="night-item-label">睡眠时长</text>
+        </view>
+        <view class="night-item">
+          <text class="night-item-value">{{latest.turns}}</text>
+          <text class="night-item-label">翻身次数</text>
+        </view>
+        <view class="night-item">
+          <text class="night-item-value">{{latest.awakes}}</text>
+          <text class="night-item-label">觉醒次数</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 逐分钟时间轴 -->
+    <view class="timeline-card" wx:if="{{timeline.length > 0}}">
+      <view class="card-header">
+        <text class="card-title">睡眠结构</text>
+        <view class="legend-wrap">
+          <view class="legend-item"><view class="legend-dot legend-sleep"></view><text class="legend-text">睡眠</text></view>
+          <view class="legend-item"><view class="legend-dot legend-wake"></view><text class="legend-text">清醒</text></view>
+        </view>
+      </view>
+      <view class="timeline-bar">
+        <view wx:for="{{timeline}}" wx:key="index"
+              class="tl-seg {{item.state === 'wake' ? 'tl-wake' : 'tl-sleep'}}"></view>
+      </view>
+      <view class="timeline-labels">
+        <text class="tl-label">{{timelineStartHM}}</text>
+        <text class="tl-label">{{timelineEndHM}}</text>
+      </view>
+    </view>
+
+    <!-- 历史睡眠趋势折线图 -->
+    <view class="chart-card" wx:if="{{showHistory}}">
+      <view class="card-header">
+        <text class="card-title">历史睡眠趋势</text>
+        <text class="chart-sub">近14天</text>
+      </view>
+      <view class="chart-wrap">
+        <view class="chart-yaxis">
+          <text class="chart-ylabel" wx:for="{{historyGrids}}" wx:key="bottom">{{item.label}}</text>
+        </view>
+        <view class="chart-plot">
+          <view class="chart-grid" wx:for="{{historyGrids}}" wx:key="bottom"
+                style="bottom:{{item.bottom}}rpx"></view>
+          <view class="chart-line" wx:for="{{historyLines}}" wx:key="index"
+                style="left:{{item.left}}rpx;bottom:{{item.bottom}}rpx;width:{{item.width}}rpx;transform:rotate({{item.rotate}}deg)"></view>
+          <view class="chart-dot {{item.isLatest ? 'chart-dot-latest' : ''}}"
+                wx:for="{{historyPoints}}" wx:key="index"
+                style="left:{{item.left}}rpx;bottom:{{item.bottom}}rpx"></view>
+        </view>
+      </view>
+      <view class="chart-xlabels">
+        <text class="chart-xlabel">{{historyFirstDate}}</text>
+        <text class="chart-xlabel">{{historyLastDate}}</text>
+      </view>
+    </view>
+
+    <!-- 7天历史 -->
+    <view class="history-card" wx:if="{{records.length > 1}}">
+      <view class="card-header">
+        <text class="card-title">近14天记录</text>
+      </view>
+      <view class="history-list">
+        <view class="history-row" wx:for="{{records}}" wx:key="dateKey">
+          <text class="history-date">{{item.dateText}}</text>
+          <text class="history-range">{{item.onsetHM}} - {{item.wakeHM}}</text>
+          <text class="history-dur">{{item.durHM}}</text>
+        </view>
+      </view>
+    </view>
+
+  </block>
+
+</view>

@@ -235,6 +235,13 @@
   font-weight: 500;
 }
 
+.feature-sub {
+  font-size: 20rpx;
+  color: var(--text-mute);
+  margin-left: 10rpx;
+  opacity: 0.8;
+}
+
 .feature-value {
   font-size: 40rpx;
   font-weight: 700;

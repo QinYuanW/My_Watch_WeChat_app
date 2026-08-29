@@ -330,6 +330,79 @@ function setTTime(v) {
   });
 }
 
+// ---------- 13. 睡眠记录拉取 ----------
+/**
+ * 拉取手表存储的睡眠记录（7天摘要 + 最近一晚逐分钟bit图）。
+ * 发送 OV+SLEEPGET，固件回：
+ *   OK+SLEEPREC BEGIN
+ *   OK+SLEEPREC MMDD,onset,wake,dur,turns,awakes    （每晚一行，最多7行）
+ *   OK+SLEEPBIT HHHH...                              （bit图，16字节/行，共5行68B）
+ *   OK+SLEEPREC END
+ *
+ * 返回结构：
+ * {
+ *   ok: true,
+ *   records: [ { dateKey:'MMDD', onset, wake, dur, turns, awakes,
+ *                onsetHM:'23:41', wakeHM:'06:12', durHM:'6h31m' } ],
+ *   bitmap: [0/1,...],        // 最近一晚逐分钟状态（入睡后第0分钟起），1=醒/活动
+ *   raw: lines
+ * }
+ */
+function getSleepData() {
+  ensureReady();
+  return _ble.send('OV+SLEEPGET').then((lines) => {
+    if (lines.indexOf('ERR+SLEEPREC') !== -1) {
+      return { ok: false, error: 'EEPROM', raw: lines };
+    }
+    if (lines.indexOf('OK+SLEEPREC END') === -1) {
+      return { ok: false, error: 'TIMEOUT', raw: lines };
+    }
+
+    const records = [];
+    for (const l of lines) {
+      if (l.indexOf('OK+SLEEPREC ') !== 0) continue; // 跳过 BEGIN/END 行
+      const parts = l.slice('OK+SLEEPREC '.length).split(',');
+      if (parts.length !== 6) continue;
+      const onset = parseInt(parts[1], 10);
+      const wake = parseInt(parts[2], 10);
+      const dur = parseInt(parts[3], 10);
+      if ([onset, wake, dur].some(isNaN)) continue;
+      records.push({
+        dateKey: parts[0],              // MMDD 十六进制字符串
+        onset, wake, dur,
+        turns: parseInt(parts[4], 10) || 0,
+        awakes: parseInt(parts[5], 10) || 0,
+        onsetHM: minutesToHM(onset),
+        wakeHM: minutesToHM(wake % 1440), // wake 可能跨0点折算超过1440
+        durHM: minutesToHM(dur),
+      });
+    }
+
+    // bit 图：所有 OK+SLEEPBIT 行的 hex 串拼接，每字节8位展开（LSB在前：位m → 字节m/8的第m%8位）
+    let bitmap = [];
+    let bitmapHex = '';
+    for (const l of lines) {
+      if (l.indexOf('OK+SLEEPBIT ') !== 0) continue;
+      const hex = l.slice('OK+SLEEPBIT '.length).replace(/\s+/g, '');
+      bitmapHex += hex;
+      for (let i = 0; i + 1 < hex.length; i += 2) {
+        const byte = parseInt(hex.substr(i, 2), 16);
+        if (isNaN(byte)) continue;
+        for (let b = 0; b < 8; b++) bitmap.push((byte >> b) & 1);
+      }
+    }
+
+    return { ok: true, records, bitmap, bitmapHex, raw: lines };
+  });
+}
+
+// 分钟数转 HH:MM 显示（兼容超过24h的折算值）
+function minutesToHM(m) {
+  const mm = ((m % 60) + 60) % 60;
+  const hh = Math.floor(m / 60);
+  return (hh < 10 ? '0' : '') + hh + ':' + (mm < 10 ? '0' : '') + mm;
+}
+
 // ==================== BootLoader / OTA 流程（Raw 模式） ====================
 //  工作流：
 //   1. enterOTA() 手表跳到 BootLoader，BLE 自动断开 + 重启广播
@@ -426,6 +499,7 @@ module.exports = {
   setLTime,
   getTTime,
   setTTime,
+  getSleepData,
 
   // ---- BootLoader 操作 ----
   bootEnterRawMode,

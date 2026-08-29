@@ -63,6 +63,9 @@ let _bleMtu = 23;             // BLE MTU（默认 23，单包有效负载 = MTU 
 let _asyncListeners = []; // (line) => void
 const ASYNC_PREFIXES = ['HRSTART', 'HR=', 'HREND'];
 
+// 连接状态多订阅监听（页面级订阅：sleep 页等需要实时感知断连）
+let _connListeners = []; // (connected) => void
+
 // ========================= 对外 API =========================
 
 function init(callbacks) {
@@ -245,6 +248,7 @@ function connect(deviceId) {
             _connected = true;
             _notifyReady = true;
             _cb.onConnectionChange(true);
+            notifyConnChange(true);
             bindNotifyListener();
             // 协商更大 MTU（默认 23，最大可到 247），减少 BLE 包数量
             wx.setBLEMTU({
@@ -319,6 +323,26 @@ function isAsyncLine(line) {
     if (line.indexOf(p) === 0) return true;
   }
   return false;
+}
+
+/**
+ * 注册连接状态监听（页面级）：连接/断连时回调 connected 布尔值。
+ * 与 init() 的 onConnectionChange 并存，返回注销函数。
+ */
+function onConnChange(cb) {
+  _connListeners.push(cb);
+  // 注册时立即同步一次当前状态，避免错过已发生的状态变化
+  try { cb(_connected); } catch (e) {}
+  return () => {
+    const i = _connListeners.indexOf(cb);
+    if (i >= 0) _connListeners.splice(i, 1);
+  };
+}
+
+function notifyConnChange(connected) {
+  for (const cb of _connListeners.slice()) {
+    try { cb(connected); } catch (e) {}
+  }
 }
 
 // ========================= 内部实现 =========================
@@ -416,6 +440,7 @@ function handleDisconnected() {
     _currentResolve = null;
   }
   _cb.onConnectionChange(false);
+  notifyConnChange(false);
 }
 
 /**
@@ -490,7 +515,10 @@ function isOneLineResponse(line) {
       line.indexOf('TTIME=') === 0 ||
       line.indexOf('TTIME SET=') === 0 ||
       line.indexOf('TTIME ERR') === 0 ||
-      line.indexOf('HRREPORT=') === 0) {
+      line.indexOf('HRREPORT=') === 0 ||
+      // 睡眠记录多行响应的结束行（BEGIN..END 之间为请求响应累积）
+      line === 'OK+SLEEPREC END' ||
+      line === 'ERR+SLEEPREC') {
     return true;
   }
   return false;
@@ -514,6 +542,21 @@ function processQueue() {
 
   log('info', `发送指令：${item.cmd}`);
 
+  // 超时定时器在发送前启动（不依赖 write 回调）：
+  // 断连/系统蓝牙关闭时 wx.writeBLECharacteristicValue 可能 success/fail 都不回调，
+  // 若只在 success 里启动定时器，会导致 promise 永不 settle、页面 loading 卡死
+  _timeoutTimer = setTimeout(() => {
+    if (!_sending) return;
+    _timeoutTimer = null;
+    // 如果已经收到了一些响应但还没达到结算条件（比如 VO 漏包），也把已收到的返回
+    if (_responseLines.length > 0) {
+      log('warn', `指令 ${item.cmd} 超时，但已有部分响应`);
+      resolveCurrent();
+    } else {
+      rejectCurrent(new Error(`指令 ${item.cmd} 超时（${_cmdTimeoutMs}ms 无响应）`));
+    }
+  }, _cmdTimeoutMs);
+
   // 固件 UART 接收现在按 \r\n 拼整行，发送时统一补行尾
   const cmdWithCrlf = /(\r\n|\n|\r)$/.test(item.cmd) ? item.cmd : item.cmd + '\r\n';
   const buffer = str2ab(cmdWithCrlf);
@@ -524,21 +567,18 @@ function processQueue() {
     value: buffer,
     writeType: 'writeNoResponse',
     success: () => {
-      // 启动超时定时器
-      _timeoutTimer = setTimeout(() => {
-        if (!_sending) return;
-        // 如果已经收到了一些响应但还没达到结算条件（比如 VO 漏包），也把已收到的返回
-        _timeoutTimer = null;
-        if (_responseLines.length > 0) {
-          log('warn', `指令 ${item.cmd} 超时，但已有部分响应`);
-          resolveCurrent();
-        } else {
-          rejectCurrent(new Error(`指令 ${item.cmd} 超时（${_cmdTimeoutMs}ms 无响应）`));
-        }
-      }, _cmdTimeoutMs);
+      // 定时器已在发送前启动，此处无需处理
     },
     fail: (e) => {
       log('err', `写入失败：${JSON.stringify(e)}`);
+      // 链路级错误（适配器不可用 10001 / 连接不存在 10006 / 特征值失效 10007 等）：
+      // 说明连接实际已断但 _connected 尚未收到断连事件，直接触发断连处理让状态归位，
+      // 避免上层继续在"假在线"状态下发命令
+      if (e && (e.errCode === 10001 || e.errCode === 10006 || e.errCode === 10007 ||
+                e.errCode === -1)) {
+        handleDisconnected();
+        return; // handleDisconnected 内部已 reject 当前命令并清空队列
+      }
       rejectCurrent(new Error('write fail: ' + JSON.stringify(e)));
     }
   });
@@ -596,6 +636,7 @@ module.exports = {
   disconnect,
   send,
   onLine,
+  onConnChange,
   isConnected() { return _connected; },
   getDeviceInfo() {
     if (!_connected || !_deviceId) return null;

@@ -2,6 +2,7 @@
 const ble = require('../../utils/bleService.js');
 const proto = require('../../utils/watchProtocol.js');
 const hrStore = require('../../utils/hrStore.js');
+const sleepStore = require('../../utils/sleepStore.js');
 
 const LAST_DEVICE_KEY = 'last_connected_device'; // wx.storageSync 的 key
 
@@ -19,6 +20,7 @@ Page({
     currentDate: '',
     overviewProgress: 0, // 0-100
     sleepDuration: '--',
+    sleepDate: '',
 
     // 传感器数据
     sensor: {
@@ -55,6 +57,7 @@ Page({
           if (!this.data.otaMode) {
             this._startHRCapture();
             this._autoRefreshData(); // 刷新一次数据
+            this._syncSleepRecords(); // 上报手表 EEPROM 中的 7 天睡眠记录到云端
           }
         }
       },
@@ -84,6 +87,7 @@ Page({
     if (this.data.connected && !this.data.busy) {
       this._autoRefreshData();
     }
+    this._refreshSleepCard(); // 睡眠卡片：显示云端最近一晚的睡眠时长
   },
 
   onUnload() {
@@ -238,6 +242,49 @@ Page({
     }
   },
 
+  // ===================== 睡眠记录云同步 =====================
+  // 连接成功后自动拉取手表 EEPROM 的 7 天睡眠记录，upsert 到云数据库。
+  // 静默执行：失败不影响任何交互，下次连接会重试（手表数据仍在 EEPROM）。
+  _syncSleepRecords() {
+    if (this._sleepSyncing) return;
+    this._sleepSyncing = true;
+    proto.getSleepData()
+      .then((r) => {
+        if (!r.ok || !r.records || r.records.length === 0) return;
+        const latest = r.records.reduce((m, rec) => (rec.dateKey > m.dateKey ? rec : m), r.records[0]);
+        return sleepStore.syncRecords(r.records)
+          .then(() => sleepStore.saveLatestBitmap(latest.dateKey, r.bitmapHex, latest.onset))
+          .then(() => this.pushLog('ok', `睡眠记录已同步到云端 ${r.records.length} 晚`));
+      })
+      .catch((e) => {
+        console.warn('睡眠记录云同步失败', e);
+      })
+      .then(() => {
+        this._sleepSyncing = false;
+        this._refreshSleepCard(); // 同步完成后刷新首页睡眠卡片
+      });
+  },
+
+  // 睡眠卡片：读云端最近一晚记录，显示时长（小时，保留1位小数）+ 归属日期
+  _refreshSleepCard() {
+    sleepStore.listRecords(1)
+      .then((records) => {
+        const rec = records && records[0];
+        if (!rec || !rec.dur) {
+          this.setData({ sleepDuration: '--', sleepDate: '' });
+          return;
+        }
+        const hours = (rec.dur / 60).toFixed(1);
+        const month = parseInt(rec.dateKey.slice(0, 2), 16);
+        const day = parseInt(rec.dateKey.slice(2), 16);
+        this.setData({
+          sleepDuration: hours,
+          sleepDate: month + '月' + day + '日',
+        });
+      })
+      .catch((e) => console.warn('睡眠卡片刷新失败', e));
+  },
+
   markLastDevice(lastId) {
     if (!lastId) return;
   },
@@ -291,6 +338,11 @@ Page({
   // 点击功能卡片
   onTapFeature(e) {
     const feature = e.currentTarget.dataset.feature;
+    // 睡眠走独立的睡眠报告页（拉取EEPROM存储的睡眠记录）
+    if (feature === 'sleep') {
+      wx.navigateTo({ url: '/pages/sleep/sleep' });
+      return;
+    }
     wx.navigateTo({
       url: `/pages/detail/detail?feature=${feature}`
     });

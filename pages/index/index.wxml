@@ -83,13 +83,14 @@
       <view class="feature-arrow">›</view>
     </view>
 
-    <!-- 睡眠卡片 (占位) -->
+    <!-- 睡眠卡片 -->
     <view class="feature-card" bindtap="onTapFeature" data-feature="sleep">
       <view class="feature-icon-wrap feature-icon-purple">
         <text class="feature-icon">😴</text>
       </view>
       <view class="feature-info">
         <text class="feature-title">睡眠</text>
+        <text wx:if="{{sleepDate}}" class="feature-sub">{{sleepDate}}</text>
         <text class="feature-value">{{sleepDuration || '--'}}<text class="feature-unit">小时</text></text>
       </view>
       <view class="feature-arrow">›</view>
