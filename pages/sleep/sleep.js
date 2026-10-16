@@ -24,6 +24,11 @@ Page({
     showHistory: false,
     // 错误提示
     errorMsg: '',
+    // 周统计（近7天均值/最长/最短）
+    weekAvgHM: '',
+    weekMaxHM: '',
+    weekMinHM: '',
+    weekCount: 0,
   },
 
   onLoad() {
@@ -127,13 +132,14 @@ Page({
     this._cloudRecords = records; // 保存供 _renderData 合并（手表7天 + 云端更旧记录 = 14天）
     const latest = records.length > 0 ? records[0] : null; // listRecords 已按日期倒序
     this.setData({
-      latest,
+      latest: this._decorateLatest(latest),
       records,
       timeline: [],
       timelineStartHM: '',
       timelineEndHM: '',
     });
     this._applyHistory(records);
+    this._applyWeekStats(records);
     // 蓝牙不在线时，尝试从云端 latest_bitmap 还原最近一晚时间轴
     if (latest && !ble.isConnected()) {
       sleepStore.getLatestBitmap()
@@ -228,7 +234,7 @@ Page({
     const latest = merged.length > 0 ? merged[0] : null;
 
     this.setData({
-      latest,
+      latest: this._decorateLatest(latest),
       records: merged.map((rec) => ({
         ...rec,
         dateText: rec.dateText || this._dateKeyToText(rec.dateKey),
@@ -238,6 +244,42 @@ Page({
       timelineEndHM: latest ? latest.wakeHM : '',
     });
     this._applyHistory(merged);
+    this._applyWeekStats(merged);
+  },
+
+  // 最近一晚附加指标：睡眠评分(0-100) + 睡眠效率(%)
+  // 效率 = 时长/在床时段；评分 = 时长得分(时长达标60分)+效率得分(40分)加权，
+  // 翻身频率超阈值扣分（参考商业手环的简化版）
+  _decorateLatest(latest) {
+    if (!latest || !latest.dur) return latest;
+    const out = { ...latest };
+    const inBed = (latest.wake >= latest.onset) ? (latest.wake - latest.onset) : (latest.wake + 1440 - latest.onset);
+    out.efficiency = inBed > 0 ? Math.round(latest.dur / inBed * 100) : null;
+
+    // 评分：时长以7.5h为满，效率以95%为满，翻身按每小时>6次开始扣
+    const durScore = Math.min(1, latest.dur / 450) * 60;
+    const effScore = (out.efficiency == null ? 0.5 : Math.min(1, out.efficiency / 95)) * 40;
+    const hours = latest.dur / 60;
+    const turnPenalty = Math.min(15, Math.max(0, ((latest.turns || 0) / Math.max(hours, 0.1)) - 6) * 3);
+    out.score = Math.max(0, Math.min(100, Math.round(durScore + effScore - turnPenalty)));
+    return out;
+  },
+
+  // 周统计：近7天有效记录的均值/最长/最短（新→旧列表）
+  _applyWeekStats(records) {
+    const list = (records || []).filter((r) => r && r.dur > 0).slice(0, 7);
+    if (list.length === 0) {
+      this.setData({ weekAvgHM: '', weekMaxHM: '', weekMinHM: '', weekCount: 0 });
+      return;
+    }
+    const durs = list.map((r) => r.dur);
+    const avg = durs.reduce((a, b) => a + b, 0) / durs.length;
+    this.setData({
+      weekAvgHM: this._minToHM(Math.round(avg)),
+      weekMaxHM: this._minToHM(Math.max.apply(null, durs)),
+      weekMinHM: this._minToHM(Math.min.apply(null, durs)),
+      weekCount: list.length,
+    });
   },
 
   // bit图 → 时间轴色块数组

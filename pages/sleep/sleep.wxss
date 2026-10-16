@@ -86,23 +86,34 @@
   background: #ede9fe;
   border-radius: 24rpx;
   padding: 10rpx 24rpx;
+  display: flex;
+  align-items: baseline;
 }
 .score-value {
-  font-size: 30rpx;
+  font-size: 40rpx;
   font-weight: 700;
   color: #7c3aed;
+  font-variant-numeric: tabular-nums;
+}
+.score-unit {
+  font-size: 22rpx;
+  font-weight: 600;
+  color: #7c3aed;
+  margin-left: 4rpx;
 }
 
 .night-grid {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
 }
 
 .night-item {
-  flex: 1;
+  flex: 0 0 33.33%;
   display: flex;
   flex-direction: column;
   align-items: center;
+  margin-bottom: 28rpx;
 }
 
 .night-item-value {
@@ -210,6 +221,35 @@
   color: #7c3aed;
   text-align: right;
   font-variant-numeric: tabular-nums;
+}
+
+/* ===================== 周统计 ===================== */
+.week-stats {
+  display: flex;
+  background: #f5f3ff;
+  border-radius: 20rpx;
+  padding: 20rpx 0;
+  margin-bottom: 24rpx;
+}
+
+.week-stat {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.week-stat-value {
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #6d28d9;
+  font-variant-numeric: tabular-nums;
+}
+
+.week-stat-label {
+  font-size: 20rpx;
+  color: var(--text-mute, #999);
+  margin-top: 6rpx;
 }
 
 /* ===================== 历史睡眠趋势折线图 ===================== */

@@ -35,7 +35,8 @@
       <view class="night-header">
         <text class="night-title">{{latest.dateText || '最近一晚'}}</text>
         <view class="score-badge">
-          <text class="score-value">{{latest.durHM}}</text>
+          <text class="score-value">{{latest.score != null ? latest.score : '--'}}</text>
+          <text class="score-unit">分</text>
         </view>
       </view>
       <view class="night-grid">
@@ -50,6 +51,10 @@
         <view class="night-item">
           <text class="night-item-value">{{latest.durHM}}</text>
           <text class="night-item-label">睡眠时长</text>
+        </view>
+        <view class="night-item">
+          <text class="night-item-value">{{latest.efficiency != null ? latest.efficiency + '%' : '--'}}</text>
+          <text class="night-item-label">睡眠效率</text>
         </view>
         <view class="night-item">
           <text class="night-item-value">{{latest.turns}}</text>
@@ -86,6 +91,20 @@
       <view class="card-header">
         <text class="card-title">历史睡眠趋势</text>
         <text class="chart-sub">近14天</text>
+      </view>
+      <view class="week-stats" wx:if="{{weekCount > 0}}">
+        <view class="week-stat">
+          <text class="week-stat-value">{{weekAvgHM}}</text>
+          <text class="week-stat-label">7天平均</text>
+        </view>
+        <view class="week-stat">
+          <text class="week-stat-value">{{weekMaxHM}}</text>
+          <text class="week-stat-label">最长</text>
+        </view>
+        <view class="week-stat">
+          <text class="week-stat-value">{{weekMinHM}}</text>
+          <text class="week-stat-label">最短</text>
+        </view>
       </view>
       <view class="chart-wrap">
         <view class="chart-yaxis">
